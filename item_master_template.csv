@@ -1,0 +1,7 @@
+sku,name,groupId,unitCost,sellingPrice,minStock,description,imageUrl
+CPU-INT-I9,Intel Processor Core i9-14900K,electro,450.00,9424000,20,High-performance processor with 24 cores (8 P-cores and 16 E-cores).,
+GPU-NVI-RTX4090,NVIDIA GeForce RTX 4090 Founder Edition,electro,1200.00,25584000,10,The ultimate GeForce GPU. It brings an enormous leap in performance.,
+CAP-SMD-10U,SMD MLCC Capacitor 10uF 50V,parts,0.12,4000,100,Surface mount multi-layer ceramic capacitor.,
+DIODE-SMD-1N,SMD Diode 1N4148 Fast Switching,parts,0.08,2880,150,1N4148 high-speed switching diode in SOD-123 package.,
+VT-FAN-120M,Vortex DC Fan 120mm High Static Pressure,parts,8.50,238400,30,120mm PWM controllable premium cooling fan.,
+BOX-CRD-MED,Cardboard Box Medium Double-Wall x25,pack,12.00,360000,50,Highly durable medium sized brown box pack.,

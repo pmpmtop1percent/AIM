@@ -1,0 +1,291 @@
+{
+  "entities": {
+    "UserRole": {
+      "title": "User Role Permissions",
+      "description": "Represents a user's role-based access control inside the WMS system.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The Firebase Auth UID of the user." },
+        "email": { "type": "string", "description": "The user's email address." },
+        "role": { "type": "string", "enum": ["admin", "manager", "purchasing", "auditor"], "description": "The system role." },
+        "name": { "type": "string", "description": "The display name of the user." },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Item": {
+      "title": "Item Master",
+      "description": "Represents an individual inventory stock-keeping unit.",
+      "type": "object",
+      "properties": {
+        "sku": { "type": "string", "description": "Unique alphanumeric uppercase minimum 3 characters identifier." },
+        "name": { "type": "string", "description": "Display name of the item." },
+        "groupId": { "type": "string", "description": "The associated Item Group ID." },
+        "unitCost": { "type": "number", "description": "Average unit cost (>0)." },
+        "sellingPrice": { "type": "number", "description": "Standard selling price (>0)." },
+        "minStock": { "type": "number", "description": "Minimum stock threshold for alerts." },
+        "subComponents": { "type": "array", "description": "List of sub-component SKUs and quantity multipliers for cannibalization." }
+      },
+      "required": ["sku", "name", "groupId", "unitCost", "sellingPrice"]
+    },
+    "Warehouse": {
+      "title": "Warehouse Detail",
+      "description": "Represents a physical storage facility database container.",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string", "description": "Strictly unique code like WH-MUT-01" },
+        "name": { "type": "string", "description": "Display name of the warehouse" },
+        "location": { "type": "string", "description": "Address or physical coordinates of the facility" }
+      },
+      "required": ["code", "name"]
+    },
+    "Stock": {
+      "title": "Stock Balance",
+      "description": "Detailed Stock on Hand (SOH) for an item inside a specific warehouse.",
+      "type": "object",
+      "properties": {
+        "sku": { "type": "string" },
+        "warehouseCode": { "type": "string" },
+        "physicalQty": { "type": "number", "description": "Physically present units" },
+        "bookedQty": { "type": "number", "description": "Committed but undelivered sales orders" },
+        "bin": { "type": "string", "description": "Bin location" },
+        "rack": { "type": "string", "description": "Rack location" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["sku", "warehouseCode", "physicalQty", "bookedQty"]
+    },
+    "SalesOrder": {
+      "title": "Sales Order Document",
+      "description": "Represents an active order-to-cash workflow.",
+      "type": "object",
+      "properties": {
+        "soNumber": { "type": "string", "description": "SO-2026-XXXXX transaction regex code." },
+        "customerId": { "type": "string" },
+        "customerName": { "type": "string" },
+        "date": { "type": "string" },
+        "targetWarehouseCode": { "type": "string" },
+        "currency": { "type": "string", "description": "Transaction currency code (e.g. IDR, USD)" },
+        "exchangeRate": { "type": "number" },
+        "items": { "type": "array", "description": "Matrix list of items, quantities, and prices" },
+        "status": { "type": "string", "enum": ["Draft", "Picking", "DeliveryApproval", "Invoiced", "Paid"], "description": "Current workflow milestone phase" },
+        "totalAmount": { "type": "number" },
+        "discountAmount": { "type": "number" },
+        "taxAmount": { "type": "number" },
+        "netAmount": { "type": "number" },
+        "pickingDetails": { "type": "object", "description": "Locations, bin, rack, and picked checklist status" },
+        "deliveryApprovedBy": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["soNumber", "customerId", "date", "targetWarehouseCode", "status"]
+    },
+    "PurchaseOrder": {
+      "title": "Purchase Order Document",
+      "description": "Represents an active procure-to-pay workflow.",
+      "type": "object",
+      "properties": {
+        "poNumber": { "type": "string", "description": "PO-2026-XXXXX transaction regex code." },
+        "vendorId": { "type": "string" },
+        "vendorName": { "type": "string" },
+        "date": { "type": "string" },
+        "currency": { "type": "string" },
+        "exchangeRate": { "type": "number" },
+        "items": { "type": "array" },
+        "status": { "type": "string", "enum": ["Draft", "Released", "ReceiptAudit", "Discrepancy", "Approved", "Paid"] },
+        "receiptItems": { "type": "array", "description": "The audited arrivals matching PO items, marked Accepted, Damaged, or Incorrect SKU" },
+        "totalAmount": { "type": "number" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["poNumber", "vendorId", "date", "status"]
+    },
+    "StockMovement": {
+      "title": "Stock Movement Ledger",
+      "description": "Historic audit log trace of quantity deltas.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "sku": { "type": "string" },
+        "warehouseCode": { "type": "string" },
+        "movementType": { "type": "string", "enum": ["Inbound", "Outbound", "Adjustment", "Cannibalization", "Opname"] },
+        "referenceVoucher": { "type": "string" },
+        "quantityDelta": { "type": "number" },
+        "cost": { "type": "number" },
+        "userEmail": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["sku", "warehouseCode", "movementType", "quantityDelta", "userEmail", "timestamp"]
+    },
+    "Cannibalization": {
+      "title": "Component Cannibalization Log",
+      "description": "Dismantling of multi-component assets.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "masterSku": { "type": "string" },
+        "warehouseCode": { "type": "string" },
+        "disassembledQty": { "type": "number" },
+        "subComponentsHarvested": { "type": "array", "description": "List of sub SKUs and location mappings (aisle, shelf, position)" },
+        "fees": { "type": "number" },
+        "scrapsLoss": { "type": "number" },
+        "userEmail": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["masterSku", "warehouseCode", "disassembledQty", "userEmail", "timestamp"]
+    },
+    "StockOpname": {
+      "title": "Stock Opname Audit",
+      "description": "Physical counts adjustment verification loop.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "warehouseCode": { "type": "string" },
+        "segmentName": { "type": "string", "description": "Target audit segment block" },
+        "status": { "type": "string", "enum": ["Lockdown", "UnderReview", "Approved"] },
+        "itemsAudited": { "type": "array" },
+        "lossGainDescription": { "type": "string" },
+        "checkedBy": { "type": "string" },
+        "approvedBy": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["warehouseCode", "segmentName", "status", "timestamp"]
+    },
+    "Delivery": {
+      "title": "Delivery Document",
+      "description": "Represents an individual physical shipment of items under a Sales Order.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "deliveryNumber": { "type": "string" },
+        "salesOrderId": { "type": "string" },
+        "salesOrderNumber": { "type": "string" },
+        "customerName": { "type": "string" },
+        "items": { "type": "array" },
+        "deliveredBy": { "type": "string" },
+        "deliveredAt": { "type": "string" },
+        "status": { "type": "string", "enum": ["Uninvoiced", "Invoiced"] }
+      },
+      "required": ["deliveryNumber", "salesOrderId", "items", "status"]
+    },
+    "Invoice": {
+      "title": "Sales Invoice Document",
+      "description": "Represents a billing statement generated from one or multiple Deliveries.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "invoiceNumber": { "type": "string" },
+        "customerId": { "type": "string" },
+        "customerName": { "type": "string" },
+        "deliveryIds": { "type": "array" },
+        "items": { "type": "array" },
+        "totalAmount": { "type": "number" },
+        "discountAmount": { "type": "number" },
+        "taxAmount": { "type": "number" },
+        "netAmount": { "type": "number" },
+        "status": { "type": "string", "enum": ["Unpaid", "Paid"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["invoiceNumber", "deliveryIds", "items", "totalAmount", "status"]
+    },
+    "PaymentItem": {
+      "title": "Invoice Payment Receipt",
+      "description": "Flexible multi-invoice receipt payments capturing user cashier audits.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "paymentNumber": { "type": "string" },
+        "customerId": { "type": "string" },
+        "customerName": { "type": "string" },
+        "invoiceIds": { "type": "array" },
+        "invoiceNumbers": { "type": "array" },
+        "totalPaid": { "type": "number" },
+        "paymentMethod": { "type": "string", "enum": ["Cash", "Bank Transfer", "Credit Card", "Cheque", "Cash On Delivery"] },
+        "referenceNumber": { "type": "string" },
+        "paidAt": { "type": "string" },
+        "capturedBy": { "type": "string" },
+        "notes": { "type": "string" }
+      },
+      "required": ["paymentNumber", "customerId", "invoiceIds", "totalPaid", "paymentMethod", "paidAt"]
+    },
+    "CustomRole": {
+      "title": "Custom Role Definition",
+      "description": "Represents a customizable role defining which menus/modules are accessible.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The custom role identifier/slug." },
+        "name": { "type": "string", "description": "The display name of the custom role." },
+        "description": { "type": "string", "description": "A description of this role." },
+        "allowedTabs": { "type": "array", "description": "List of allowed tabs (DASHBOARD, STOCK, SALES, PURCHASE, OPNAME, SETUP)" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "name", "allowedTabs"]
+    },
+    "EmailRole": {
+      "title": "Email Role Assignment",
+      "description": "Represents an assignment of a specific email address to a role.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "description": "The user's email address (lowercase, trim)." },
+        "roleId": { "type": "string", "description": "The target role ID (custom or built-in)." },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["email", "roleId"]
+    }
+  },
+  "firestore": {
+    "/customRoles/{id}": {
+      "schema": "CustomRole",
+      "description": "Customizable roles configuration database."
+    },
+    "/emailRoles/{email}": {
+      "schema": "EmailRole",
+      "description": "Mapping of specific emails to roles."
+    },
+    "/userRoles/{uid}": {
+      "schema": "UserRole",
+      "description": "User permissions lookup mapping."
+    },
+    "/items/{sku}": {
+      "schema": "Item",
+      "description": "Item master record database."
+    },
+    "/warehouses/{code}": {
+      "schema": "Warehouse",
+      "description": "Warehouse physical hubs."
+    },
+    "/stocks/{id}": {
+      "schema": "Stock",
+      "description": "Stock records partitioned by SKU and warehouse code."
+    },
+    "/salesOrders/{id}": {
+      "schema": "SalesOrder",
+      "description": "Logistics Order-to-Cash operations workflows."
+    },
+    "/purchaseOrders/{id}": {
+      "schema": "PurchaseOrder",
+      "description": "Procure-to-Pay workflow documents."
+    },
+    "/stockMovements/{id}": {
+      "schema": "StockMovement",
+      "description": "Universal historical physical ledger logs."
+    },
+    "/cannibalizations/{id}": {
+      "schema": "Cannibalization",
+      "description": "Track component disassembly events."
+    },
+    "/stockOpnames/{id}": {
+      "schema": "StockOpname",
+      "description": "Audit and locking process documents."
+    },
+    "/deliveries/{id}": {
+      "schema": "Delivery",
+      "description": "Physical shipments associated with Sales Orders."
+    },
+    "/invoices/{id}": {
+      "schema": "Invoice",
+      "description": "Sales Invoice billing statements combining one or several deliveries."
+    },
+    "/payments/{id}": {
+      "schema": "PaymentItem",
+      "description": "Flexible multi-invoice receipt payments capturing user cashier audits."
+    }
+  }
+}

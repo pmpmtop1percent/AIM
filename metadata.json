@@ -1,0 +1,6 @@
+{
+  "name": "Alphalux AIM Enterprise WMS",
+  "description": "Enterprise-scale warehouse and inventory management system with multi-currency, secure RBAC, Order-to-Cash, Procure-to-Pay, and component cannibalization auditing.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
