@@ -1,3 +1,1 @@
-git branch -a
-git log --all --graph --oneline
-git remote -v
+node check_invalid_skus.js

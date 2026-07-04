@@ -121,6 +121,7 @@ export const SetupView: React.FC<SetupViewProps> = ({ activeSubTab, setActiveSub
   const [isImporting, setIsImporting] = useState(false);
   const [importProgress, setImportProgress] = useState({ current: 0, total: 0 });
   const [importSuccessCount, setImportSuccessCount] = useState<number | null>(null);
+  const [failedUploads, setFailedUploads] = useState<{ sku: string; name: string; error: string }[]>([]);
 
   // Editing state variables for other forms
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
@@ -392,6 +393,7 @@ export const SetupView: React.FC<SetupViewProps> = ({ activeSubTab, setActiveSub
   const handleCsvFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setDbMessage('');
     setImportSuccessCount(null);
+    setFailedUploads([]);
     const file = e.target.files?.[0];
     if (!file) {
       setCsvFile(null);
@@ -508,7 +510,7 @@ export const SetupView: React.FC<SetupViewProps> = ({ activeSubTab, setActiveSub
           rowErrors.push("Min Stock must be an integer >= 0");
         }
         
-        if (rawBuyPrice && (isNaN(Number(rawBuyPrice)) || Number(rawBuyPrice) < 0)) {
+        if (parsedBuyPrice !== undefined && (isNaN(parsedBuyPrice) || parsedBuyPrice < 0)) {
           rowErrors.push("Buy Price must be a number >= 0");
         }
         
@@ -592,18 +594,32 @@ export const SetupView: React.FC<SetupViewProps> = ({ activeSubTab, setActiveSub
     }
 
     setDbMessage('Importing items to Firestore...');
+    setFailedUploads([]);
+    const failedList: { sku: string; name: string; error: string }[] = [];
+
     for (let i = 0; i < csvItems.length; i++) {
       setImportProgress({ current: i + 1, total: csvItems.length });
       try {
         await createOrUpdateItem(csvItems[i]);
         successCount++;
-      } catch (err) {
+      } catch (err: any) {
         console.error(`Import failed for SKU: ${csvItems[i].sku}`, err);
+        failedList.push({
+          sku: csvItems[i].sku,
+          name: csvItems[i].name,
+          error: err?.message || err?.toString() || 'Unknown database write error'
+        });
       }
     }
     
+    setFailedUploads(failedList);
     setImportSuccessCount(successCount);
-    setDbMessage(`Import complete. Successfully imported ${successCount} of ${csvItems.length} items to Firestore.`);
+    
+    if (failedList.length > 0) {
+      setDbMessage(`Import complete. Successfully imported ${successCount} of ${csvItems.length} items. ${failedList.length} items failed to upload.`);
+    } else {
+      setDbMessage(`Import complete. Successfully imported all ${successCount} items to Firestore.`);
+    }
     
     // Clear CSV states after successful import
     setCsvFile(null);
@@ -1107,6 +1123,28 @@ export const SetupView: React.FC<SetupViewProps> = ({ activeSubTab, setActiveSub
           <div className="mb-5 p-3.5 bg-indigo-950/20 border border-indigo-900/40 rounded-xl text-xs text-indigo-350 font-medium leading-relaxed flex items-center gap-2.5 animate-fade-in shrink-0">
             <Sparkles className="w-4 h-4 text-indigo-400 shrink-0 animate-pulse" />
             <span>{dbMessage}</span>
+          </div>
+        )}
+
+        {failedUploads.length > 0 && (
+          <div className="mb-5 p-4 bg-rose-950/15 border border-rose-900/35 rounded-xl text-xs text-rose-300 font-medium leading-relaxed space-y-2 animate-fade-in shrink-0">
+            <div className="flex items-center gap-2 text-rose-400 font-bold uppercase tracking-wider font-mono">
+              <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500" />
+              <span>Failed to Upload {failedUploads.length} Items to Firestore</span>
+            </div>
+            <p className="text-[11px] text-rose-400">
+              The following items failed to save to the database. You can review their SKUs and details below:
+            </p>
+            <div className="p-3 bg-rose-950/30 border border-rose-900/40 rounded-lg max-h-48 overflow-y-auto font-mono text-[11px] space-y-1.5">
+              {failedUploads.map((fail, idx) => (
+                <div key={idx} className="flex gap-2">
+                  <span className="text-rose-500 shrink-0">•</span>
+                  <span className="text-rose-400 font-bold shrink-0">{fail.sku}:</span>
+                  <span className="text-rose-300 truncate max-w-md">{fail.name}</span>
+                  <span className="text-rose-500 font-semibold text-[10px] ml-auto shrink-0 font-sans">({fail.error})</span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
